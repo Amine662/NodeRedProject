@@ -1,0 +1,25 @@
+# Minimal ChirpStack configuration for local testing
+
+[general]
+log_level = "info"
+
+[postgresql]
+# Update DSN if you changed env values
+dsn = "postgres://chirpstack:chirpstack@postgresql/chirpstack?sslmode=disable"
+
+[redis]
+url = "redis://redis:6379"
+
+[network_server]
+# Bind address for network server (not the gateway bridge port)
+bind = ":8000"
+
+[application_server]
+# HTTP API and web UI
+bind = "0.0.0.0:8080"
+
+[integration.mqtt]
+# MQTT integration used to forward application uplinks
+server = "tcp://mosquitto:1883"
+
+# The following are intentionally minimal. For production, use the full example config from ChirpStack docs.

@@ -39,7 +39,8 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - chirpstack-config:/etc/chirpstack
+      - ./chirpstack:/etc/chirpstack:ro
+    command: ["--config", "/etc/chirpstack"]
 
   chirpstack-gateway-bridge:
     image: chirpstack/chirpstack-gateway-bridge:4
@@ -64,6 +65,5 @@ services:
 volumes:
   postgres-data:
   redis-data:
-  chirpstack-config:
   mosquitto-data:
   mosquitto-log:

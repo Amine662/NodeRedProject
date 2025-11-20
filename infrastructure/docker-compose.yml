@@ -62,6 +62,54 @@ services:
     ports:
       - "1883:1883"
 
+  # Optional builder service for LWN Simulator (only started when using the 'builder' profile)
+  lwn-builder:
+    image: golang:1.21-bullseye
+    profiles: ["builder"]
+    working_dir: /src
+    environment:
+      REPO_URL: https://github.com/UniCT-ARSLab/LWN-Simulator.git
+    volumes:
+      - ../third_party/LWN-Simulator:/src:rw
+    command:
+      - bash
+      - -lc
+      - |
+        set -e
+        export DEBIAN_FRONTEND=noninteractive
+        export PATH="/usr/local/go/bin:/go/bin:$$PATH"
+        apt-get update >/dev/null
+        apt-get install -y make git >/dev/null
+        if [ ! -f go.mod ]; then
+          if [ -z "$(ls -A . 2>/dev/null)" ]; then
+            echo "[lwn-builder] Empty directory detected — cloning $$REPO_URL"
+            git clone "$$REPO_URL" /tmp/lwn-simulator
+            cp -R /tmp/lwn-simulator/. /src
+          else
+            echo "[lwn-builder] go.mod not found and directory not empty; please place LWN-Simulator sources into third_party/LWN-Simulator"
+            exit 1
+          fi
+        fi
+        if [ -f Makefile ]; then
+          echo "[lwn-builder] Makefile detected — running make targets"
+          make install-dep || echo "[lwn-builder] install-dep target missing or failed (continuing)"
+          if make -n build >/dev/null 2>&1; then
+            make build
+          else
+            echo "[lwn-builder] 'build' target missing — falling back to 'go build'"
+            go test ./... || true
+            go build ./...
+          fi
+        else
+          echo "[lwn-builder] No Makefile found — running go test/build"
+          go test ./... || true
+          go build ./...
+        fi
+        mkdir -p bin
+        cp -f ./config.json ./bin/config.json || true
+        echo "[lwn-builder] Building Windows executable"
+        GOOS=windows GOARCH=amd64 go build -o bin/lwnsimulator.exe cmd/main.go
+
 volumes:
   postgres-data:
   redis-data:

@@ -42,28 +42,76 @@ docs/
 
 ## Prerequisites
 
-1. **Docker Desktop** (with Compose v2) and at least 4 GB RAM available.
-2. **Node.js 18+** (ships with Node-RED CLI) or install Node-RED via Docker.
-3. **Java 11+** runtime for the LWN Simulator.
-4. **Git** to clone this repository.
+1. **Docker Desktop** with Compose v2 (WSL2 backend recommended) and ≥4 GB RAM.
+2. **Node.js 18+** (ships with `npx node-red`) or a Node-RED Docker image.
+3. **Git** to clone this repository (and the simulator during the build).
+4. Optional: **mosquitto-clients** for quick MQTT tests (or exec into the Mosquitto container).
 
-## Quick start
+## Installation & run guide
 
-1. Clone the repo and copy the env template:
-   ```cmd
-   git clone <your-repo-url> NodeRed
-   cd NodeRed
-   copy infrastructure\env.template infrastructure\.env
-   ```
-2. Start ChirpStack + Mosquitto:
-   ```cmd
-   docker compose -f infrastructure\docker-compose.yml up -d
-   ```
-3. Open ChirpStack UI at `http://localhost:8080` (default admin: `admin/chirpstack`).
-4. Import the device profile & application as described in `docs/simulator-setup.md`.
-5. Download and launch LWN Simulator, then load the config from the same doc.
-6. Install/start Node-RED (`npx node-red` or Docker) and import `flows/factory-iiot-flow.json` via the Node-RED editor.
-7. Deploy the flow, open the dashboard (`http://localhost:1880/ui`), and observe real-time charts.
+> Commands assume Windows PowerShell / CMD from the repo root (`C:\Users\…\NodeRed`). Adjust paths as needed.
+
+### 1. Clone the repo & prepare environment
+
+```cmd
+git clone <your-repo-url> NodeRedProject
+cd NodeRedProject
+copy infrastructure\env.template infrastructure\.env
+```
+
+### 2. Start the core stack (Postgres + Redis + ChirpStack + Mosquitto)
+
+```cmd
+docker compose -f infrastructure\docker-compose.yml up -d
+```
+
+Verify via `docker compose -f infrastructure\docker-compose.yml ps` and by visiting `http://localhost:8080` (default login `admin/admin`).
+
+### 3. Build the LWN Simulator (containerized Go build)
+
+```cmd
+docker compose -f infrastructure\docker-compose.yml --profile builder run --rm lwn-builder
+```
+
+The first run pulls the Go toolchain, clones `UniCT-ARSLab/LWN-Simulator`, and outputs binaries to `third_party\LWN-Simulator\bin` (both Linux and Windows executables).
+
+### 4. Launch the simulator & configure gateway/devices
+
+```powershell
+cd third_party\LWN-Simulator\bin
+./lwnsimulator.exe
+```
+
+Simulator UI: `http://localhost:8000`
+
+1. Add a gateway pointing to `127.0.0.1:1700` (UDP forwarder toward ChirpStack Gateway Bridge).
+2. Add/import devices; capture DevEUI / JoinEUI / AppKey (use MSB form when registering in ChirpStack).
+3. Start the simulation when ChirpStack devices are ready (AutoStart optional).
+
+### 5. Configure ChirpStack (application + OTAA devices)
+
+1. Applications → Create (e.g., `factory-floor`).
+2. For each simulator device: Create Device → OTAA → paste DevEUI / JoinEUI / AppKey → Save.
+3. Optionally set payload codecs or keep the default (Node-RED flow decodes the JSON payloads published by ChirpStack).
+
+### 6. Start Node-RED and import the flow
+
+```powershell
+npx node-red
+```
+
+In `http://localhost:1880`: Import → select `flows/factory-iiot-flow.json` → Deploy. The dashboard lives at `http://localhost:1880/ui`.
+
+### 7. Validate telemetry end-to-end
+
+- ChirpStack “Live LoRaWAN frames” shows join-accepts + uplinks.
+- MQTT spot-check (inside Mosquitto container):
+  ```cmd
+  docker compose -f infrastructure\docker-compose.yml exec mosquitto ^
+    mosquitto_sub -h mosquitto -t "application/#" -v
+  ```
+- Node-RED dashboard tiles update and raise the alarm toast when temperature > 60 °C.
+- Capture screenshots (ChirpStack, simulator, Node-RED dashboard) for the final deliverables.
 
 ## Verification checklist
 

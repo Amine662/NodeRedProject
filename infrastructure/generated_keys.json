@@ -1,0 +1,17 @@
+{
+  "Temperature": {
+    "devEUI": "128d8e0f82d674ab",
+    "appKey": "dcecf434ed05364d4b3b7ac5dbb375dc",
+    "joinEUI": "0000000000000000"
+  },
+  "Humidity": {
+    "devEUI": "f0c433d5f039b201",
+    "appKey": "a4cf424e332a92c3ab7b917914a6cf54",
+    "joinEUI": "0000000000000000"
+  },
+  "Vibration": {
+    "devEUI": "30d339f24e9edbd4",
+    "appKey": "a838e896d964b445cbeaa440e3bec322",
+    "joinEUI": "0000000000000000"
+  }
+}

@@ -1,0 +1,9 @@
+
+[integration.mqtt]
+server="tcp://mosquitto:1883"
+event_topic_template="eu868/gateway/{{ .GatewayID }}/event/{{ .EventType }}"
+state_topic_template="eu868/gateway/{{ .GatewayID }}/state/{{ .StateType }}"
+command_topic_template="eu868/gateway/{{ .GatewayID }}/command/#"
+
+[integration.mqtt.auth.generic]
+server="tcp://mosquitto:1883"
